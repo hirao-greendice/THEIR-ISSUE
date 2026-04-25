@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { type CSSProperties, useEffect, useMemo, useState } from 'react'
 import floorImage from './assets/game/floor.png'
 import redBackImage from './assets/game/redback.png'
 import redFrontImage from './assets/game/redfront.png'
@@ -30,6 +30,19 @@ const redImages: Record<Direction, string> = {
   down: redFrontImage,
   left: redLeftImage,
   right: redRightImage,
+}
+
+function isInVisibleArea(
+  x: number,
+  y: number,
+  visibleArea: { startX: number; startY: number; width: number; height: number },
+) {
+  return (
+    x >= visibleArea.startX &&
+    y >= visibleArea.startY &&
+    x < visibleArea.startX + visibleArea.width &&
+    y < visibleArea.startY + visibleArea.height
+  )
 }
 
 function App() {
@@ -96,47 +109,62 @@ function App() {
       <div
         className="game-area"
         style={{
+          '--visible-cols': visibleArea.width,
+          '--visible-rows': visibleArea.height,
           gridTemplateColumns: `repeat(${visibleArea.width}, 1fr)`,
           gridTemplateRows: `repeat(${visibleArea.height}, 1fr)`,
-        }}
+        } as CSSProperties}
       >
         {Array.from({ length: visibleArea.height }).map((_, rowIndex) =>
           Array.from({ length: visibleArea.width }).map((__, colIndex) => {
             const x = visibleArea.startX + colIndex
             const y = visibleArea.startY + rowIndex
             const tile = stage.tiles[y][x]
-            const hasPlayer = stage.player.x === x && stage.player.y === y
-            const hasRed = stage.red.x === x && stage.red.y === y
 
             return (
               <div
-                className={`cell ${tile}${hasPlayer || hasRed ? ' has-character' : ''}`}
+                className={`cell ${tile}`}
                 key={`${x}-${y}`}
                 style={
                   tile === 'floor'
                     ? { backgroundImage: `url(${floorImage})` }
                     : undefined
                 }
-              >
-                {hasPlayer && (
-                  <img
-                    className="character"
-                    src={whiteImages[stage.player.dir]}
-                    alt="white character"
-                    draggable={false}
-                  />
-                )}
-                {hasRed && (
-                  <img
-                    className="character"
-                    src={redImages[stage.red.dir]}
-                    alt="red character"
-                    draggable={false}
-                  />
-                )}
-              </div>
+              />
             )
           }),
+        )}
+        {isInVisibleArea(stage.player.x, stage.player.y, visibleArea) && (
+          <div
+            className="character-token white-character"
+            style={{
+              '--x': stage.player.x - visibleArea.startX,
+              '--y': stage.player.y - visibleArea.startY,
+            } as CSSProperties}
+          >
+            <img
+              className="character"
+              src={whiteImages[stage.player.dir]}
+              alt="white character"
+              draggable={false}
+            />
+          </div>
+        )}
+        {isInVisibleArea(stage.red.x, stage.red.y, visibleArea) && (
+          <div
+            className="character-token red-character"
+            style={{
+              '--x': stage.red.x - visibleArea.startX,
+              '--y': stage.red.y - visibleArea.startY,
+            } as CSSProperties}
+          >
+            <img
+              className="character"
+              src={redImages[stage.red.dir]}
+              alt="red character"
+              draggable={false}
+            />
+          </div>
         )}
       </div>
     </main>
