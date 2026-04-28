@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useMemo, useState } from 'react'
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
 import floorImage from './assets/game/floor.png'
 import redBackImage from './assets/game/redback.png'
 import redFrontImage from './assets/game/redfront.png'
@@ -32,6 +32,8 @@ const redImages: Record<Direction, string> = {
   right: redRightImage,
 }
 
+const INPUT_LOCK_MS = 120
+
 function isInVisibleArea(
   x: number,
   y: number,
@@ -47,6 +49,8 @@ function isInVisibleArea(
 
 function App() {
   const [stage, setStage] = useState<Stage>(initialStage)
+  const inputLockedRef = useRef(false)
+  const inputUnlockTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -57,6 +61,16 @@ function App() {
       }
 
       event.preventDefault()
+
+      if (event.repeat || inputLockedRef.current) {
+        return
+      }
+
+      inputLockedRef.current = true
+      inputUnlockTimerRef.current = window.setTimeout(() => {
+        inputLockedRef.current = false
+        inputUnlockTimerRef.current = null
+      }, INPUT_LOCK_MS)
 
       setStage((currentStage) => {
         const move = moves[nextDir]
@@ -85,6 +99,9 @@ function App() {
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
+      if (inputUnlockTimerRef.current !== null) {
+        window.clearTimeout(inputUnlockTimerRef.current)
+      }
     }
   }, [])
 
@@ -140,6 +157,7 @@ function App() {
             style={{
               '--x': stage.player.x - visibleArea.startX,
               '--y': stage.player.y - visibleArea.startY,
+              zIndex: stage.player.y + 2,
             } as CSSProperties}
           >
             <img
@@ -156,6 +174,7 @@ function App() {
             style={{
               '--x': stage.red.x - visibleArea.startX,
               '--y': stage.red.y - visibleArea.startY,
+              zIndex: stage.red.y + 2,
             } as CSSProperties}
           >
             <img
