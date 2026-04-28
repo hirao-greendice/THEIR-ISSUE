@@ -3,6 +3,8 @@
   display: grid;
   place-items: center;
   background: #1f2430;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 .game-area {
@@ -14,6 +16,8 @@
   display: grid;
   background: #161a22;
   overflow: hidden;
+  touch-action: none;
+  user-select: none;
 }
 
 .cell {

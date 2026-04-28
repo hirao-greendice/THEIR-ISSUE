@@ -12,6 +12,15 @@
   box-sizing: border-box;
 }
 
+html,
 body {
+  height: 100%;
   margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+#root {
+  min-height: 100%;
 }

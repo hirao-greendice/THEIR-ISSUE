@@ -1,4 +1,11 @@
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import floorImage from './assets/game/floor.png'
 import redBackImage from './assets/game/redback.png'
 import redFrontImage from './assets/game/redfront.png'
@@ -51,6 +58,41 @@ function App() {
   const [stage, setStage] = useState<Stage>(initialStage)
   const inputLockedRef = useRef(false)
   const inputUnlockTimerRef = useRef<number | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+
+  const movePlayer = useCallback((nextDir: Direction) => {
+    if (inputLockedRef.current) {
+      return
+    }
+
+    inputLockedRef.current = true
+    inputUnlockTimerRef.current = window.setTimeout(() => {
+      inputLockedRef.current = false
+      inputUnlockTimerRef.current = null
+    }, INPUT_LOCK_MS)
+
+    setStage((currentStage) => {
+      const move = moves[nextDir]
+      const nextX = currentStage.player.x + move.dx
+      const nextY = currentStage.player.y + move.dy
+      const playerMoved = canMove(currentStage, nextX, nextY, currentStage.red)
+
+      const nextStage: Stage = {
+        ...currentStage,
+        player: {
+          x: playerMoved ? nextX : currentStage.player.x,
+          y: playerMoved ? nextY : currentStage.player.y,
+          dir: nextDir,
+        },
+      }
+
+      return updateRedAfterPlayer(
+        nextStage,
+        currentStage.redWillMoveNextTurn,
+        playerMoved,
+      )
+    })
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -62,37 +104,11 @@ function App() {
 
       event.preventDefault()
 
-      if (event.repeat || inputLockedRef.current) {
+      if (event.repeat) {
         return
       }
 
-      inputLockedRef.current = true
-      inputUnlockTimerRef.current = window.setTimeout(() => {
-        inputLockedRef.current = false
-        inputUnlockTimerRef.current = null
-      }, INPUT_LOCK_MS)
-
-      setStage((currentStage) => {
-        const move = moves[nextDir]
-        const nextX = currentStage.player.x + move.dx
-        const nextY = currentStage.player.y + move.dy
-        const playerMoved = canMove(currentStage, nextX, nextY, currentStage.red)
-
-        const nextStage: Stage = {
-          ...currentStage,
-          player: {
-            x: playerMoved ? nextX : currentStage.player.x,
-            y: playerMoved ? nextY : currentStage.player.y,
-            dir: nextDir,
-          },
-        }
-
-        return updateRedAfterPlayer(
-          nextStage,
-          currentStage.redWillMoveNextTurn,
-          playerMoved,
-        )
-      })
+      movePlayer(nextDir)
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -103,7 +119,7 @@ function App() {
         window.clearTimeout(inputUnlockTimerRef.current)
       }
     }
-  }, [])
+  }, [movePlayer])
 
   const camera = stage.camera
   const cameraPadding = camera.padding ?? 0
@@ -125,6 +141,42 @@ function App() {
     <main className="game-shell">
       <div
         className="game-area"
+        onTouchStart={(event) => {
+          const touch = event.touches[0]
+
+          touchStartRef.current = {
+            x: touch.clientX,
+            y: touch.clientY,
+          }
+        }}
+        onTouchMove={(event) => {
+          event.preventDefault()
+        }}
+        onTouchEnd={(event) => {
+          const touchStart = touchStartRef.current
+          const touch = event.changedTouches[0]
+
+          touchStartRef.current = null
+
+          if (!touchStart) {
+            return
+          }
+
+          const dx = touch.clientX - touchStart.x
+          const dy = touch.clientY - touchStart.y
+          const absDx = Math.abs(dx)
+          const absDy = Math.abs(dy)
+          const minSwipeDistance = 24
+
+          if (Math.max(absDx, absDy) < minSwipeDistance) {
+            return
+          }
+
+          const nextDir =
+            absDx > absDy ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up'
+
+          movePlayer(nextDir)
+        }}
         style={{
           '--visible-cols': visibleArea.width,
           '--visible-rows': visibleArea.height,
