@@ -238,6 +238,40 @@ function App() {
           </div>
         )}
       </div>
+      <div className="mobile-controls" aria-label="mobile controls">
+        <button
+          type="button"
+          className="control-button control-up"
+          aria-label="up"
+          onClick={() => movePlayer('up')}
+        >
+          ▲
+        </button>
+        <button
+          type="button"
+          className="control-button control-left"
+          aria-label="left"
+          onClick={() => movePlayer('left')}
+        >
+          ◀
+        </button>
+        <button
+          type="button"
+          className="control-button control-right"
+          aria-label="right"
+          onClick={() => movePlayer('right')}
+        >
+          ▶
+        </button>
+        <button
+          type="button"
+          className="control-button control-down"
+          aria-label="down"
+          onClick={() => movePlayer('down')}
+        >
+          ▼
+        </button>
+      </div>
     </main>
   )
 }
